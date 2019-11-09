@@ -10,13 +10,15 @@ import android.database.DefaultDatabaseErrorHandler;
 import android.database.MergeCursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.room.Room;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+import androidx.sqlite.db.SupportSQLiteOpenHelper;
+import androidx.sqlite.db.SupportSQLiteQueryBuilder;
 
 import org.apache.commons.io.FileUtils;
 
@@ -72,7 +74,6 @@ public class PodDBAdapter {
     public static final String KEY_IMAGE = "image";
     public static final String KEY_IMAGE_URL = "image_url";
     public static final String KEY_FEED = "feed";
-    public static final String KEY_MEDIA = "media";
     public static final String KEY_DOWNLOADED = "downloaded";
     public static final String KEY_LASTUPDATE = "last_update";
     public static final String KEY_FEEDFILE = "feedfile";
@@ -145,16 +146,6 @@ public class PodDBAdapter {
             + KEY_LAST_UPDATE_FAILED + " INTEGER DEFAULT 0,"
             + KEY_AUTO_DELETE_ACTION + " INTEGER DEFAULT 0,"
             + KEY_FEED_PLAYBACK_SPEED + " REAL DEFAULT " + SPEED_USE_GLOBAL + ")";
-
-    private static final String CREATE_TABLE_FEED_ITEMS = "CREATE TABLE "
-            + TABLE_NAME_FEED_ITEMS + " (" + TABLE_PRIMARY_KEY + KEY_TITLE
-            + " TEXT," + KEY_CONTENT_ENCODED + " TEXT," + KEY_PUBDATE
-            + " INTEGER," + KEY_READ + " INTEGER," + KEY_LINK + " TEXT,"
-            + KEY_DESCRIPTION + " TEXT," + KEY_PAYMENT_LINK + " TEXT,"
-            + KEY_MEDIA + " INTEGER," + KEY_FEED + " INTEGER,"
-            + KEY_HAS_CHAPTERS + " INTEGER," + KEY_ITEM_IDENTIFIER + " TEXT,"
-            + KEY_IMAGE_URL + " TEXT,"
-            + KEY_AUTO_DOWNLOAD + " INTEGER)";
 
     private static final String CREATE_TABLE_FEED_MEDIA = "CREATE TABLE "
             + TABLE_NAME_FEED_MEDIA + " (" + TABLE_PRIMARY_KEY + KEY_DURATION
@@ -257,7 +248,6 @@ public class PodDBAdapter {
             TABLE_NAME_FEED_ITEMS + "." + KEY_READ,
             TABLE_NAME_FEED_ITEMS + "." + KEY_LINK,
             TABLE_NAME_FEED_ITEMS + "." + KEY_PAYMENT_LINK,
-            TABLE_NAME_FEED_ITEMS + "." + KEY_MEDIA,
             TABLE_NAME_FEED_ITEMS + "." + KEY_FEED,
             TABLE_NAME_FEED_ITEMS + "." + KEY_HAS_CHAPTERS,
             TABLE_NAME_FEED_ITEMS + "." + KEY_ITEM_IDENTIFIER,
@@ -296,7 +286,8 @@ public class PodDBAdapter {
 
     private static Context context;
 
-    private static volatile SQLiteDatabase db;
+    private static volatile SupportSQLiteDatabase db;
+//    private static volatile SQLiteDatabase db;
 
     public static void init(Context context) {
         PodDBAdapter.context = context.getApplicationContext();
@@ -304,8 +295,9 @@ public class PodDBAdapter {
 
     // Bill Pugh Singleton Implementation
     private static class SingletonHolder {
-        private static final PodDBHelper dbHelper = new PodDBHelper(PodDBAdapter.context, DATABASE_NAME, null);
         private static final PodDBAdapter dbAdapter = new PodDBAdapter();
+        private static final AppDatabase db = Room.databaseBuilder(PodDBAdapter.context, AppDatabase.class, DATABASE_NAME).addMigrations(AppDatabase.Companion.getMIGRATION_1070401_1070402(), AppDatabase.Companion.getMIGRATION_1070402_1070403()).build();
+        private static final SupportSQLiteOpenHelper dbHelper = db.getOpenHelper();
     }
 
     public static PodDBAdapter getInstance() {
@@ -323,8 +315,8 @@ public class PodDBAdapter {
     }
 
     @SuppressLint("NewApi")
-    private SQLiteDatabase openDb() {
-        SQLiteDatabase newDb;
+    private SupportSQLiteDatabase openDb() {
+        SupportSQLiteDatabase newDb;
         try {
             newDb = SingletonHolder.dbHelper.getWritableDatabase();
             if (Build.VERSION.SDK_INT >= 16) {
@@ -388,10 +380,10 @@ public class PodDBAdapter {
         if (feed.getId() == 0) {
             // Create new entry
             Log.d(this.toString(), "Inserting new Feed into db");
-            feed.setId(db.insert(TABLE_NAME_FEEDS, null, values));
+            feed.setId(db.insert(TABLE_NAME_FEEDS, SQLiteDatabase.CONFLICT_ABORT, values));
         } else {
             Log.d(this.toString(), "Updating existing Feed in db");
-            db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_FEEDS, SQLiteDatabase.CONFLICT_ABORT,  values, KEY_ID + "=?",
                     new String[]{String.valueOf(feed.getId())});
         }
         return feed.getId();
@@ -410,7 +402,7 @@ public class PodDBAdapter {
         values.put(KEY_INCLUDE_FILTER, prefs.getFilter().getIncludeFilter());
         values.put(KEY_EXCLUDE_FILTER, prefs.getFilter().getExcludeFilter());
         values.put(KEY_FEED_PLAYBACK_SPEED, prefs.getFeedPlaybackSpeed());
-        db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?", new String[]{String.valueOf(prefs.getFeedID())});
+        db.update(TABLE_NAME_FEEDS,SQLiteDatabase.CONFLICT_ABORT,  values, KEY_ID + "=?", new String[]{String.valueOf(prefs.getFeedID())});
     }
 
     public void setFeedItemFilter(long feedId, Set<String> filterValues) {
@@ -419,13 +411,13 @@ public class PodDBAdapter {
                 "setFeedItemFilter() called with: feedId = [%d], filterValues = [%s]", feedId, valuesList));
         ContentValues values = new ContentValues();
         values.put(KEY_HIDE, valuesList);
-        db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
+        db.update(TABLE_NAME_FEEDS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
     }
 
     public void setFeedItemSortOrder(long feedId, @Nullable SortOrder sortOrder) {
         ContentValues values = new ContentValues();
         values.put(KEY_SORT_ORDER, toCodeString(sortOrder));
-        db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
+        db.update(TABLE_NAME_FEEDS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
     }
 
     /**
@@ -454,9 +446,9 @@ public class PodDBAdapter {
             values.put(KEY_FEEDITEM, media.getItem().getId());
         }
         if (media.getId() == 0) {
-            media.setId(db.insert(TABLE_NAME_FEED_MEDIA, null, values));
+            media.setId(db.insert(TABLE_NAME_FEED_MEDIA, SQLiteDatabase.CONFLICT_ABORT, values));
         } else {
-            db.update(TABLE_NAME_FEED_MEDIA, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                     new String[]{String.valueOf(media.getId())});
         }
         return media.getId();
@@ -469,7 +461,7 @@ public class PodDBAdapter {
             values.put(KEY_DURATION, media.getDuration());
             values.put(KEY_PLAYED_DURATION, media.getPlayedDuration());
             values.put(KEY_LAST_PLAYED_TIME, media.getLastPlayedTime());
-            db.update(TABLE_NAME_FEED_MEDIA, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                     new String[]{String.valueOf(media.getId())});
         } else {
             Log.e(TAG, "setFeedMediaPlaybackInformation: ID of media was 0");
@@ -481,7 +473,7 @@ public class PodDBAdapter {
             ContentValues values = new ContentValues();
             values.put(KEY_PLAYBACK_COMPLETION_DATE, media.getPlaybackCompletionDate().getTime());
             values.put(KEY_PLAYED_DURATION, media.getPlayedDuration());
-            db.update(TABLE_NAME_FEED_MEDIA, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                     new String[]{String.valueOf(media.getId())});
         } else {
             Log.e(TAG, "setFeedMediaPlaybackCompletionDate: ID of media was 0");
@@ -493,7 +485,7 @@ public class PodDBAdapter {
             db.beginTransactionNonExclusive();
             ContentValues values = new ContentValues();
             values.put(KEY_PLAYED_DURATION, 0);
-            db.update(TABLE_NAME_FEED_MEDIA, values, null, new String[0]);
+            db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, null, new String[0]);
             db.setTransactionSuccessful();
         } catch (SQLException e) {
             Log.e(TAG, Log.getStackTraceString(e));
@@ -534,7 +526,7 @@ public class PodDBAdapter {
     public void setFeedDownloadUrl(String original, String updated) {
         ContentValues values = new ContentValues();
         values.put(KEY_DOWNLOAD_URL, updated);
-        db.update(TABLE_NAME_FEEDS, values, KEY_DOWNLOAD_URL + "=?", new String[]{original});
+        db.update(TABLE_NAME_FEEDS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_DOWNLOAD_URL + "=?", new String[]{original});
     }
 
     public void setFeedItemlist(List<FeedItem> items) {
@@ -602,9 +594,9 @@ public class PodDBAdapter {
         values.put(KEY_IMAGE_URL, item.getImageUrl());
 
         if (item.getId() == 0) {
-            item.setId(db.insert(TABLE_NAME_FEED_ITEMS, null, values));
+            item.setId(db.insert(TABLE_NAME_FEED_ITEMS, SQLiteDatabase.CONFLICT_ABORT, values));
         } else {
-            db.update(TABLE_NAME_FEED_ITEMS, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_FEED_ITEMS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                     new String[]{String.valueOf(item.getId())});
         }
         if (item.getMedia() != null) {
@@ -623,12 +615,12 @@ public class PodDBAdapter {
             ContentValues values = new ContentValues();
 
             values.put(KEY_READ, played);
-            db.update(TABLE_NAME_FEED_ITEMS, values, KEY_ID + "=?", new String[]{String.valueOf(itemId)});
+            db.update(TABLE_NAME_FEED_ITEMS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(itemId)});
 
             if (resetMediaPosition) {
                 values.clear();
                 values.put(KEY_POSITION, 0);
-                db.update(TABLE_NAME_FEED_MEDIA, values, KEY_ID + "=?", new String[]{String.valueOf(mediaId)});
+                db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(mediaId)});
             }
 
             db.setTransactionSuccessful();
@@ -652,7 +644,7 @@ public class PodDBAdapter {
             for (long id : itemIds) {
                 values.clear();
                 values.put(KEY_READ, read);
-                db.update(TABLE_NAME_FEED_ITEMS, values, KEY_ID + "=?", new String[]{String.valueOf(id)});
+                db.update(TABLE_NAME_FEED_ITEMS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(id)});
             }
             db.setTransactionSuccessful();
         } catch (SQLException e) {
@@ -671,9 +663,9 @@ public class PodDBAdapter {
             values.put(KEY_LINK, chapter.getLink());
             values.put(KEY_CHAPTER_TYPE, chapter.getChapterType());
             if (chapter.getId() == 0) {
-                chapter.setId(db.insert(TABLE_NAME_SIMPLECHAPTERS, null, values));
+                chapter.setId(db.insert(TABLE_NAME_SIMPLECHAPTERS, SQLiteDatabase.CONFLICT_ABORT, values));
             } else {
-                db.update(TABLE_NAME_SIMPLECHAPTERS, values, KEY_ID + "=?",
+                db.update(TABLE_NAME_SIMPLECHAPTERS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                         new String[]{String.valueOf(chapter.getId())});
             }
         }
@@ -689,7 +681,7 @@ public class PodDBAdapter {
     void setFeedCustomTitle(long feedId, String customTitle) {
         ContentValues values = new ContentValues();
         values.put(KEY_CUSTOM_TITLE, customTitle);
-        db.update(TABLE_NAME_FEEDS, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
+        db.update(TABLE_NAME_FEEDS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?", new String[]{String.valueOf(feedId)});
     }
 
     /**
@@ -705,9 +697,9 @@ public class PodDBAdapter {
         values.put(KEY_REASON_DETAILED, status.getReasonDetailed());
         values.put(KEY_DOWNLOADSTATUS_TITLE, status.getTitle());
         if (status.getId() == 0) {
-            status.setId(db.insert(TABLE_NAME_DOWNLOAD_LOG, null, values));
+            status.setId(db.insert(TABLE_NAME_DOWNLOAD_LOG, SQLiteDatabase.CONFLICT_ABORT, values));
         } else {
-            db.update(TABLE_NAME_DOWNLOAD_LOG, values, KEY_ID + "=?",
+            db.update(TABLE_NAME_DOWNLOAD_LOG,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                     new String[]{String.valueOf(status.getId())});
         }
         return status.getId();
@@ -716,7 +708,7 @@ public class PodDBAdapter {
     public void setFeedItemAutoDownload(FeedItem feedItem, long autoDownload) {
         ContentValues values = new ContentValues();
         values.put(KEY_AUTO_DOWNLOAD, autoDownload);
-        db.update(TABLE_NAME_FEED_ITEMS, values, KEY_ID + "=?",
+        db.update(TABLE_NAME_FEED_ITEMS,SQLiteDatabase.CONFLICT_ABORT, values, KEY_ID + "=?",
                 new String[]{String.valueOf(feedItem.getId())});
     }
 
@@ -737,7 +729,7 @@ public class PodDBAdapter {
                 values.put(KEY_ID, i);
                 values.put(KEY_FEEDITEM, item.getId());
                 values.put(KEY_FEED, item.getFeed().getId());
-                db.insertWithOnConflict(TABLE_NAME_FAVORITES, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                db.insert(TABLE_NAME_FAVORITES, SQLiteDatabase.CONFLICT_REPLACE, values);
             }
             db.setTransactionSuccessful();
         } catch (SQLException e) {
@@ -759,7 +751,7 @@ public class PodDBAdapter {
         ContentValues values = new ContentValues();
         values.put(KEY_FEEDITEM, item.getId());
         values.put(KEY_FEED, item.getFeedId());
-        db.insert(TABLE_NAME_FAVORITES, null, values);
+        db.insert(TABLE_NAME_FAVORITES, SQLiteDatabase.CONFLICT_ABORT, values);
     }
 
     public void removeFavoriteItem(FeedItem item) {
@@ -773,7 +765,7 @@ public class PodDBAdapter {
     private boolean isItemInFavorites(FeedItem item) {
         String query = String.format("SELECT %s from %s WHERE %s=%d",
                 KEY_ID, TABLE_NAME_FAVORITES, KEY_FEEDITEM, item.getId());
-        Cursor c = db.rawQuery(query, null);
+        Cursor c = db.query(query, null);
         int count = c.getCount();
         c.close();
         return count > 0;
@@ -789,7 +781,7 @@ public class PodDBAdapter {
                 values.put(KEY_ID, i);
                 values.put(KEY_FEEDITEM, item.getId());
                 values.put(KEY_FEED, item.getFeed().getId());
-                db.insertWithOnConflict(TABLE_NAME_QUEUE, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                db.insert(TABLE_NAME_QUEUE, SQLiteDatabase.CONFLICT_REPLACE, values);
             }
             db.setTransactionSuccessful();
         } catch (SQLException e) {
@@ -859,7 +851,7 @@ public class PodDBAdapter {
     public void clearPlaybackHistory() {
         ContentValues values = new ContentValues();
         values.put(KEY_PLAYBACK_COMPLETION_DATE, 0);
-        db.update(TABLE_NAME_FEED_MEDIA, values, null, null);
+        db.update(TABLE_NAME_FEED_MEDIA,SQLiteDatabase.CONFLICT_ABORT, values, null, null);
     }
 
     public void clearDownloadLog() {
@@ -872,12 +864,11 @@ public class PodDBAdapter {
      * @return The cursor of the query
      */
     public final Cursor getAllFeedsCursor() {
-        return db.query(TABLE_NAME_FEEDS, FEED_SEL_STD, null, null, null, null,
-                KEY_TITLE + " COLLATE NOCASE ASC");
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEEDS).columns(FEED_SEL_STD).orderBy(KEY_TITLE + " COLLATE NOCASE ASC").create());
     }
 
     public final Cursor getFeedCursorDownloadUrls() {
-        return db.query(TABLE_NAME_FEEDS, new String[]{KEY_ID, KEY_DOWNLOAD_URL}, null, null, null, null, null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEEDS).columns(new String[]{KEY_ID, KEY_DOWNLOAD_URL}).create());
     }
 
     /**
@@ -891,19 +882,14 @@ public class PodDBAdapter {
     }
 
     private Cursor getAllItemsOfFeedCursor(final long feedId) {
-        return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, KEY_FEED
-                        + "=?", new String[]{String.valueOf(feedId)}, null, null,
-                null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_FEED+ "=?", new String[]{String.valueOf(feedId)}).create());
     }
 
     /**
      * Return a cursor with the SEL_FI_EXTRA selection of a single feeditem.
      */
     public final Cursor getExtraInformationOfItem(final FeedItem item) {
-        return db
-                .query(TABLE_NAME_FEED_ITEMS, SEL_FI_EXTRA, KEY_ID + "=?",
-                        new String[]{String.valueOf(item.getId())}, null,
-                        null, null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(SEL_FI_EXTRA).selection(KEY_ID + "=?", new String[]{String.valueOf(item.getId())}).create());
     }
 
     /**
@@ -936,7 +922,7 @@ public class PodDBAdapter {
                             + neededLength);
                 }
 
-                cursors[i] = db.rawQuery("SELECT * FROM "
+                cursors[i] = db.query("SELECT * FROM "
                         + TABLE_NAME_FEED_IMAGES + " WHERE " + KEY_ID + " IN "
                         + buildInOperator(neededLength), parts);
             }
@@ -944,28 +930,23 @@ public class PodDBAdapter {
             result.moveToFirst();
             return result;
         } else {
-            return db.query(TABLE_NAME_FEED_IMAGES, null, KEY_ID + " IN "
-                    + buildInOperator(length), imageIds, null, null, null);
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_IMAGES).selection( KEY_ID + " IN " + buildInOperator(length), imageIds).create());
         }
     }
 
     public final Cursor getSimpleChaptersOfFeedItemCursor(final FeedItem item) {
-        return db.query(TABLE_NAME_SIMPLECHAPTERS, null, KEY_FEEDITEM
-                        + "=?", new String[]{String.valueOf(item.getId())}, null,
-                null, null
-        );
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_SIMPLECHAPTERS).selection(KEY_FEEDITEM + "=?", new String[]{String.valueOf(item.getId())}).create());
     }
 
     public final Cursor getDownloadLog(final int feedFileType, final long feedFileId) {
         final String query = "SELECT * FROM " + TABLE_NAME_DOWNLOAD_LOG +
                 " WHERE " + KEY_FEEDFILE + "=" + feedFileId + " AND " + KEY_FEEDFILETYPE + "=" + feedFileType
                 + " ORDER BY " + KEY_ID + " DESC";
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public final Cursor getDownloadLogCursor(final int limit) {
-        return db.query(TABLE_NAME_DOWNLOAD_LOG, null, null, null, null,
-                null, KEY_COMPLETION_DATE + " DESC LIMIT " + limit);
+        return  db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_DOWNLOAD_LOG).orderBy(KEY_COMPLETION_DATE + " DESC LIMIT " + limit).create());
     }
 
     /**
@@ -981,11 +962,11 @@ public class PodDBAdapter {
                 TABLE_NAME_QUEUE + "." + KEY_FEEDITEM,
                 TABLE_NAME_QUEUE + "." + KEY_ID};
         String query = String.format("SELECT %s FROM %s INNER JOIN %s ON %s=%s ORDER BY %s", args);
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public Cursor getQueueIDCursor() {
-        return db.query(TABLE_NAME_QUEUE, new String[]{KEY_FEEDITEM}, null, null, null, null, KEY_ID + " ASC", null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_QUEUE).columns(new String[]{KEY_FEEDITEM}).orderBy( KEY_ID + " ASC").create());
     }
 
 
@@ -997,7 +978,7 @@ public class PodDBAdapter {
                 TABLE_NAME_FAVORITES + "." + KEY_FEEDITEM,
                 TABLE_NAME_FEED_ITEMS + "." + KEY_PUBDATE};
         String query = String.format("SELECT %s FROM %s INNER JOIN %s ON %s=%s ORDER BY %s DESC", args);
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public void setFeedItems(int state) {
@@ -1039,11 +1020,11 @@ public class PodDBAdapter {
                 KEY_PUBDATE + " DESC"
         };
         final String query = String.format("SELECT %s FROM %s INNER JOIN %s ON %s WHERE %s ORDER BY %s", args);
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public final Cursor getRecentlyPublishedItemsCursor(int offset, int limit) {
-        return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, null, null, null, null, KEY_PUBDATE + " DESC LIMIT " + offset + ", " + limit);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).orderBy( KEY_PUBDATE + " DESC LIMIT " + offset + ", " + limit).create());
     }
 
     public Cursor getDownloadedItemsCursor() {
@@ -1052,7 +1033,7 @@ public class PodDBAdapter {
                 + " INNER JOIN " + TABLE_NAME_FEED_MEDIA
                 + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_ID + "=" + TABLE_NAME_FEED_MEDIA + "." + KEY_FEEDITEM
                 + " WHERE " + TABLE_NAME_FEED_MEDIA + "." + KEY_DOWNLOADED + ">0";
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     /**
@@ -1068,13 +1049,11 @@ public class PodDBAdapter {
             throw new IllegalArgumentException("Limit must be >= 0");
         }
 
-        return db.query(TABLE_NAME_FEED_MEDIA, null,
-                KEY_PLAYBACK_COMPLETION_DATE + " > 0", null, null,
-                null, String.format("%s DESC LIMIT %d", KEY_PLAYBACK_COMPLETION_DATE, limit));
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_MEDIA).selection(KEY_PLAYBACK_COMPLETION_DATE + " > 0", null).orderBy(String.format("%s DESC LIMIT %d", KEY_PLAYBACK_COMPLETION_DATE, limit)).create());
     }
 
     public final Cursor getSingleFeedMediaCursor(long id) {
-        return db.query(TABLE_NAME_FEED_MEDIA, null, KEY_ID + "=?", new String[]{String.valueOf(id)}, null, null, null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_MEDIA).selection(KEY_ID + "=?", new String[]{String.valueOf(id)}).create());
     }
 
     public final Cursor getFeedMediaCursor(String... itemIds) {
@@ -1101,7 +1080,7 @@ public class PodDBAdapter {
                             + neededLength);
                 }
 
-                cursors[i] = db.rawQuery("SELECT * FROM "
+                cursors[i] = db.query("SELECT * FROM "
                         + TABLE_NAME_FEED_MEDIA + " WHERE " + KEY_FEEDITEM + " IN "
                         + buildInOperator(neededLength), parts);
             }
@@ -1109,8 +1088,7 @@ public class PodDBAdapter {
             result.moveToFirst();
             return result;
         } else {
-            return db.query(TABLE_NAME_FEED_MEDIA, null, KEY_FEEDITEM + " IN "
-                    + buildInOperator(length), itemIds, null, null, null);
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_MEDIA).selection(KEY_FEEDITEM + " IN " + buildInOperator(length), itemIds).create());
         }
     }
 
@@ -1125,8 +1103,7 @@ public class PodDBAdapter {
     }
 
     public final Cursor getFeedCursor(final long id) {
-        return db.query(TABLE_NAME_FEEDS, FEED_SEL_STD, KEY_ID + "=" + id, null,
-                null, null, null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEEDS).columns(FEED_SEL_STD).selection( KEY_ID + "=" + id, null).create());
     }
 
     public final Cursor getFeedItemCursor(final String id) {
@@ -1141,8 +1118,7 @@ public class PodDBAdapter {
             );
         }
 
-        return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, KEY_ID + " IN "
-                + buildInOperator(ids.length), ids, null, null, null);
+        return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_ID + " IN " + buildInOperator(ids.length), ids).create());
 
     }
 
@@ -1158,7 +1134,7 @@ public class PodDBAdapter {
                 + " WHERE " + TABLE_NAME_FEED_MEDIA + "." + KEY_DOWNLOAD_URL + "=" + escapedEpisodeUrl
                 + " AND " + TABLE_NAME_FEEDS + "." + KEY_DOWNLOAD_URL + "=" + escapedPodcastUrl;
         Log.d(TAG, "SQL: " + query);
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public Cursor getImageAuthenticationCursor(final String imageUrl) {
@@ -1170,12 +1146,12 @@ public class PodDBAdapter {
                 + " WHERE " + TABLE_NAME_FEED_ITEMS + "." + KEY_IMAGE_URL + "=" + downloadUrl
                 + " UNION SELECT " + KEY_USERNAME + "," + KEY_PASSWORD + " FROM " + TABLE_NAME_FEEDS
                 + " WHERE " + TABLE_NAME_FEEDS + "." + KEY_IMAGE_URL + "=" + downloadUrl;
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     public int getQueueSize() {
         final String query = String.format("SELECT COUNT(%s) FROM %s", KEY_ID, TABLE_NAME_QUEUE);
-        Cursor c = db.rawQuery(query, null);
+        Cursor c = db.query(query);
         int result = 0;
         if (c.moveToFirst()) {
             result = c.getInt(0);
@@ -1194,7 +1170,7 @@ public class PodDBAdapter {
                         + " AND " + TABLE_NAME_FEEDS + "." + KEY_KEEP_UPDATED + " > 0"
         };
         final String query = String.format("SELECT COUNT(%s) FROM %s INNER JOIN %s ON %s WHERE %s", args);
-        Cursor c = db.rawQuery(query, null);
+        Cursor c = db.query(query);
         int result = 0;
         if (c.moveToFirst()) {
             result = c.getInt(0);
@@ -1248,7 +1224,7 @@ public class PodDBAdapter {
                 + " WHERE " + KEY_FEED + " IN (" + builder.toString() + ") "
                 + " AND " + whereRead + " GROUP BY " + KEY_FEED;
 
-        Cursor c = db.rawQuery(query, null);
+        Cursor c = db.query(query);
         LongIntMap result = new LongIntMap(c.getCount());
         if (c.moveToFirst()) {
             do {
@@ -1270,7 +1246,7 @@ public class PodDBAdapter {
         final String query = "SELECT COUNT(DISTINCT " + KEY_ID + ") AS count FROM " + TABLE_NAME_FEED_MEDIA +
                 " WHERE " + KEY_DOWNLOADED + " > 0";
 
-        Cursor c = db.rawQuery(query, null);
+        Cursor c = db.query(query);
         int result = 0;
         if (c.moveToFirst()) {
             result = c.getInt(0);
@@ -1300,18 +1276,10 @@ public class PodDBAdapter {
     public Cursor searchItemDescriptions(long feedID, String query) {
         if (feedID != 0) {
             // search items in specific feed
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, KEY_FEED
-                            + "=? AND " + KEY_DESCRIPTION + " LIKE '%"
-                            + prepareSearchQuery(query) + "%'",
-                    new String[]{String.valueOf(feedID)}, null, null,
-                    null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_FEED + "=? AND " + KEY_DESCRIPTION + " LIKE '%" + prepareSearchQuery(query) + "%'", new String[]{String.valueOf(feedID)}).create());
         } else {
             // search through all items
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL,
-                    KEY_DESCRIPTION + " LIKE '%" + prepareSearchQuery(query)
-                            + "%'", null, null, null, null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_DESCRIPTION + " LIKE '%" + prepareSearchQuery(query)  + "%'", null).create());
         }
     }
 
@@ -1324,45 +1292,27 @@ public class PodDBAdapter {
     public Cursor searchItemContentEncoded(long feedID, String query) {
         if (feedID != 0) {
             // search items in specific feed
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, KEY_FEED
-                            + "=? AND " + KEY_CONTENT_ENCODED + " LIKE '%"
-                            + prepareSearchQuery(query) + "%'",
-                    new String[]{String.valueOf(feedID)}, null, null,
-                    null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_FEED + "=? AND " + KEY_CONTENT_ENCODED + " LIKE '%" + prepareSearchQuery(query) + "%'", new String[]{String.valueOf(feedID)}).create());
         } else {
             // search through all items
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL,
-                    KEY_CONTENT_ENCODED + " LIKE '%"
-                            + prepareSearchQuery(query) + "%'", null, null,
-                    null, null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_CONTENT_ENCODED + " LIKE '%" + prepareSearchQuery(query) + "%'", null).create());
         }
     }
 
     public Cursor searchItemTitles(long feedID, String query) {
         if (feedID != 0) {
             // search items in specific feed
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL, KEY_FEED
-                            + "=? AND " + KEY_TITLE + " LIKE '%"
-                            + prepareSearchQuery(query) + "%'",
-                    new String[]{String.valueOf(feedID)}, null, null,
-                    null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_FEED + "=? AND " + KEY_TITLE + " LIKE '%" + prepareSearchQuery(query) + "%'",new String[]{String.valueOf(feedID)}).create());
         } else {
             // search through all items
-            return db.query(TABLE_NAME_FEED_ITEMS, FEEDITEM_SEL_FI_SMALL,
-                    KEY_TITLE + " LIKE '%"
-                            + prepareSearchQuery(query) + "%'", null, null,
-                    null, null
-            );
+            return db.query(SupportSQLiteQueryBuilder.builder(TABLE_NAME_FEED_ITEMS).columns(FEEDITEM_SEL_FI_SMALL).selection(KEY_TITLE + " LIKE '%" + prepareSearchQuery(query) + "%'", null).create());
         }
     }
 
     public Cursor searchItemAuthors(long feedID, String query) {
         if (feedID != 0) {
             // search items in specific feed
-            return db.rawQuery("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
+            return db.query("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
                             + " JOIN " + TABLE_NAME_FEEDS + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + "=" + TABLE_NAME_FEEDS + "." + KEY_ID
                             + " WHERE " + KEY_FEED
                             + "=? AND " + KEY_AUTHOR + " LIKE '%"
@@ -1372,7 +1322,7 @@ public class PodDBAdapter {
             );
         } else {
             // search through all items
-            return db.rawQuery("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
+            return db.query("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
                             + " JOIN " + TABLE_NAME_FEEDS + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + "=" + TABLE_NAME_FEEDS + "." + KEY_ID
                             + " WHERE " + KEY_AUTHOR + " LIKE '%"
                             + prepareSearchQuery(query) + "%' ORDER BY "
@@ -1385,7 +1335,7 @@ public class PodDBAdapter {
     public Cursor searchItemFeedIdentifiers(long feedID, String query) {
         if (feedID != 0) {
             // search items in specific feed
-            return db.rawQuery("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
+            return db.query("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
                             + " JOIN " + TABLE_NAME_FEEDS + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + "=" + TABLE_NAME_FEEDS + "." + KEY_ID
                             + " WHERE " + KEY_FEED
                             + "=? AND " + KEY_FEED_IDENTIFIER + " LIKE '%"
@@ -1395,7 +1345,7 @@ public class PodDBAdapter {
             );
         } else {
             // search through all items
-            return db.rawQuery("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
+            return db.query("SELECT " + TextUtils.join(", ", FEEDITEM_SEL_FI_SMALL) + " FROM " + TABLE_NAME_FEED_ITEMS
                             + " JOIN " + TABLE_NAME_FEEDS + " ON " + TABLE_NAME_FEED_ITEMS + "." + KEY_FEED + "=" + TABLE_NAME_FEEDS + "." + KEY_ID
                             + " WHERE " + KEY_FEED_IDENTIFIER + " LIKE '%"
                             + prepareSearchQuery(query) + "%' ORDER BY "
@@ -1419,7 +1369,7 @@ public class PodDBAdapter {
                     TABLE_NAME_FEED_ITEMS + "." + KEY_ID + " WHERE " + TABLE_NAME_SIMPLECHAPTERS + "." + KEY_TITLE + " LIKE '%"
                     + prepareSearchQuery(searchQuery) + "%'";
         }
-        return db.rawQuery(query, null);
+        return db.query(query);
     }
 
     /**
@@ -1437,7 +1387,7 @@ public class PodDBAdapter {
             " ON Feeds.id = feed ORDER BY Feeds.title COLLATE NOCASE ASC;";
 
     public Cursor getFeedStatisticsCursor() {
-        return db.rawQuery(FEED_STATISTICS_QUERY, null);
+        return db.query(FEED_STATISTICS_QUERY);
     }
 
     /**
@@ -1465,50 +1415,50 @@ public class PodDBAdapter {
     /**
      * Helper class for opening the Antennapod database.
      */
-    private static class PodDBHelper extends SQLiteOpenHelper {
-
-        private static final int VERSION = 1070401;
-
-        private final Context context;
-
-        /**
-         * Constructor.
-         *
-         * @param context Context to use
-         * @param name    Name of the database
-         * @param factory to use for creating cursor objects
-         */
-        public PodDBHelper(final Context context, final String name,
-                           final CursorFactory factory) {
-            super(context, name, factory, VERSION, new PodDbErrorHandler());
-            this.context = context;
-        }
-
-        @Override
-        public void onCreate(final SQLiteDatabase db) {
-            db.execSQL(CREATE_TABLE_FEEDS);
-            db.execSQL(CREATE_TABLE_FEED_ITEMS);
-            db.execSQL(CREATE_TABLE_FEED_MEDIA);
-            db.execSQL(CREATE_TABLE_DOWNLOAD_LOG);
-            db.execSQL(CREATE_TABLE_QUEUE);
-            db.execSQL(CREATE_TABLE_SIMPLECHAPTERS);
-            db.execSQL(CREATE_TABLE_FAVORITES);
-
-            db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);
-            db.execSQL(CREATE_INDEX_FEEDITEMS_PUBDATE);
-            db.execSQL(CREATE_INDEX_FEEDITEMS_READ);
-            db.execSQL(CREATE_INDEX_FEEDMEDIA_FEEDITEM);
-            db.execSQL(CREATE_INDEX_QUEUE_FEEDITEM);
-            db.execSQL(CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM);
-
-        }
-
-        @Override
-        public void onUpgrade(final SQLiteDatabase db, final int oldVersion,
-                              final int newVersion) {
-            Log.w("DBAdapter", "Upgrading from version " + oldVersion + " to "
-                    + newVersion + ".");
-            DBUpgrader.upgrade(db, oldVersion, newVersion);
-        }
-    }
+//    private static class PodDBHelper extends SQLiteOpenHelper {
+//
+//        private static final int VERSION = 1070401;
+//
+//        private final Context context;
+//
+//        /**
+//         * Constructor.
+//         *
+//         * @param context Context to use
+//         * @param name    Name of the database
+//         * @param factory to use for creating cursor objects
+//         */
+//        public PodDBHelper(final Context context, final String name,
+//                           final CursorFactory factory) {
+//            super(context, name, factory, VERSION, new PodDbErrorHandler());
+//            this.context = context;
+//        }
+//
+//        @Override
+//        public void onCreate(final SQLiteDatabase db) {
+//            db.execSQL(CREATE_TABLE_FEEDS);
+//            db.execSQL(CREATE_TABLE_FEED_ITEMS);
+//            db.execSQL(CREATE_TABLE_FEED_MEDIA);
+//            db.execSQL(CREATE_TABLE_DOWNLOAD_LOG);
+//            db.execSQL(CREATE_TABLE_QUEUE);
+//            db.execSQL(CREATE_TABLE_SIMPLECHAPTERS);
+//            db.execSQL(CREATE_TABLE_FAVORITES);
+//
+//            db.execSQL(CREATE_INDEX_FEEDITEMS_FEED);
+//            db.execSQL(CREATE_INDEX_FEEDITEMS_PUBDATE);
+//            db.execSQL(CREATE_INDEX_FEEDITEMS_READ);
+//            db.execSQL(CREATE_INDEX_FEEDMEDIA_FEEDITEM);
+//            db.execSQL(CREATE_INDEX_QUEUE_FEEDITEM);
+//            db.execSQL(CREATE_INDEX_SIMPLECHAPTERS_FEEDITEM);
+//
+//        }
+//
+//        @Override
+//        public void onUpgrade(final SQLiteDatabase db, final int oldVersion,
+//                              final int newVersion) {
+//            Log.w("DBAdapter", "Upgrading from version " + oldVersion + " to "
+//                    + newVersion + ".");
+//            DBUpgrader.upgrade(db, oldVersion, newVersion);
+//        }
+//    }
 }

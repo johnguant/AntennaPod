@@ -5,8 +5,12 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
+import androidx.room.Entity;
 import androidx.room.Ignore;
+import androidx.room.Index;
 import androidx.room.Relation;
+import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -28,7 +32,12 @@ import de.danoeh.antennapod.core.util.ShownotesProvider;
  *
  * @author daniel
  */
-public class FeedItem extends FeedComponent implements ShownotesProvider, ImageResource {
+@Entity(tableName = "FeedItems", indices = {
+        @Index(name = "FeedItems_feed", value = "feed"),
+        @Index(name = "FeedItems_pubDate", value = "pubDate"),
+        @Index(name = "FeedItems_read", value = "read"),
+})
+public class FeedItemEntity extends FeedComponent implements ImageResource {
 
     /** tag that indicates this item is in the queue */
     public static final String TAG_QUEUE = "Queue";
@@ -57,17 +66,6 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     private String link;
     @ColumnInfo(name = "pubDate")
     private Date pubDate;
-
-    @ColumnInfo(name = "media")
-    private String deprecatedMedia;
-
-    public String getDeprecatedMedia() {
-        return deprecatedMedia;
-    }
-
-    public void setDeprecatedMedia(String deprecatedMedia) {
-        this.deprecatedMedia = deprecatedMedia;
-    }
 
     @Ignore
     private FeedMedia media;
@@ -107,13 +105,6 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         this.hasChapters = hasChapters;
     }
 
-    /**
-     * The list of chapters of this item. This might be null even if there are chapters of this item
-     * in the database. The 'hasChapters' attribute should be used to check if this item has any chapters.
-     * */
-    @Relation(parentColumn = "id", entityColumn = "feeditem")
-    private List<Chapter> chapters;
-
     @ColumnInfo(name = "image_url")
     private String imageUrl;
 
@@ -124,7 +115,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
      *      where last digit denotes the number of failed attempts
      */
     @ColumnInfo(name = "auto_download")
-    private long autoDownloadLong = 1;
+    private long autoDownloadLong = 1L;
 
     public long getAutoDownloadLong(){
         return this.autoDownloadLong;
@@ -141,7 +132,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     private final Set<String> tags = new HashSet<>();
 
     @Ignore
-    public FeedItem() {
+    public FeedItemEntity() {
         this.playState = UNPLAYED;
         this.hasChapters = false;
     }
@@ -149,9 +140,9 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     /**
      * This constructor is used by DBReader.
      * */
-    public FeedItem(long id, String title, String link, Date pubDate, String paymentLink, long feedId,
-                    boolean hasChapters, String imageUrl, int playState,
-                    String itemIdentifier, long autoDownloadLong) {
+    public FeedItemEntity(long id, String title, String link, Date pubDate, String paymentLink, long feedId,
+                          boolean hasChapters, String imageUrl, int playState,
+                          String itemIdentifier, long autoDownloadLong) {
         this.id = id;
         this.title = title;
         this.link = link;
@@ -168,7 +159,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     /**
      * This constructor should be used for creating test objects.
      */
-    public FeedItem(long id, String title, String itemIdentifier, String link, Date pubDate, int playState, Feed feed) {
+    public FeedItemEntity(long id, String title, String itemIdentifier, String link, Date pubDate, int playState, Feed feed) {
         this.id = id;
         this.title = title;
         this.itemIdentifier = itemIdentifier;
@@ -182,7 +173,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     /**
      * This constructor should be used for creating test objects involving chapter marks.
      */
-    public FeedItem(long id, String title, String itemIdentifier, String link, Date pubDate, int playState, Feed feed, boolean hasChapters) {
+    public FeedItemEntity(long id, String title, String itemIdentifier, String link, Date pubDate, int playState, Feed feed, boolean hasChapters) {
         this.id = id;
         this.title = title;
         this.itemIdentifier = itemIdentifier;
@@ -193,7 +184,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         this.hasChapters = hasChapters;
     }
 
-    public static FeedItem fromCursor(Cursor cursor) {
+    public static FeedItemEntity fromCursor(Cursor cursor) {
         int indexId = cursor.getColumnIndex(PodDBAdapter.KEY_ID);
         int indexTitle = cursor.getColumnIndex(PodDBAdapter.KEY_TITLE);
         int indexLink = cursor.getColumnIndex(PodDBAdapter.KEY_LINK);
@@ -218,11 +209,11 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         long autoDownload = cursor.getLong(indexAutoDownload);
         String imageUrl = cursor.getString(indexImageUrl);
 
-        return new FeedItem(id, title, link, pubDate, paymentLink, feedId,
+        return new FeedItemEntity(id, title, link, pubDate, paymentLink, feedId,
                 hasChapters, imageUrl, state, itemIdentifier, autoDownload);
     }
 
-    public void updateFromOther(FeedItem other) {
+    public void updateFromOther(FeedItemEntity other) {
         super.updateFromOther(other);
         if (other.imageUrl != null) {
             this.imageUrl = other.imageUrl;
@@ -242,22 +233,8 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         if (other.pubDate != null && other.pubDate.equals(pubDate)) {
             pubDate = other.pubDate;
         }
-        if (other.media != null) {
-            if (media == null) {
-                setMedia(other.media);
-                // reset to new if feed item did link to a file before
-                setNew();
-            } else if (media.compareWithOther(other.media)) {
-                media.updateFromOther(other.media);
-            }
-        }
         if (other.paymentLink != null) {
             paymentLink = other.paymentLink;
-        }
-        if (other.chapters != null) {
-            if (!hasChapters) {
-                chapters = other.chapters;
-            }
         }
     }
 
@@ -319,23 +296,6 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         }
     }
 
-    @Nullable
-    public FeedMedia getMedia() {
-        return media;
-    }
-
-    /**
-     * Sets the media object of this FeedItem. If the given
-     * FeedMedia object is not null, it's 'item'-attribute value
-     * will also be set to this item.
-     */
-    public void setMedia(FeedMedia media) {
-        this.media = media;
-        if (media != null && media.getItem() != this) {
-            media.setItem(this);
-        }
-    }
-
     public Feed getFeed() {
         return feed;
     }
@@ -385,14 +345,6 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
         this.paymentLink = paymentLink;
     }
 
-    public List<Chapter> getChapters() {
-        return chapters;
-    }
-
-    public void setChapters(List<Chapter> chapters) {
-        this.chapters = chapters;
-    }
-
     public String getItemIdentifier() {
         return itemIdentifier;
     }
@@ -407,24 +359,6 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
 
     private boolean isPlaying() {
         return media != null && media.isPlaying();
-    }
-
-    @Override
-    public Callable<String> loadShownotes() {
-        return () -> {
-            if (contentEncoded == null || description == null) {
-                DBReader.loadExtraInformationOfFeedItem(FeedItem.this);
-            }
-            if (TextUtils.isEmpty(contentEncoded)) {
-                return description;
-            } else if (TextUtils.isEmpty(description)) {
-                return contentEncoded;
-            } else if (description.length() > 1.25 * contentEncoded.length()) {
-                return description;
-            } else {
-                return contentEncoded;
-            }
-        };
     }
 
     @Override
@@ -486,7 +420,7 @@ public class FeedItem extends FeedComponent implements ShownotesProvider, ImageR
     }
 
     public void setAutoDownload(boolean autoDownload) {
-        this.autoDownloadLong = autoDownload ? 1 : 0;
+        this.autoDownloadLong = autoDownload ? 1L : 0;
     }
 
     public boolean getAutoDownload() {

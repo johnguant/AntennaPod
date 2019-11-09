@@ -1,5 +1,8 @@
 package de.danoeh.antennapod.core.feed;
 
+import androidx.room.ColumnInfo;
+import androidx.room.Ignore;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -9,9 +12,13 @@ public class FeedFilter {
 
     private static final String TAG = "FeedFilter";
 
-    private final String includeFilter;
-    private final String excludeFilter;
+    @ColumnInfo(name = "include_filter", defaultValue = "")
+    private String includeFilter;
+    @ColumnInfo(name = "exclude_filter", defaultValue = "")
+    private String excludeFilter;
 
+
+    @Ignore
     public FeedFilter() {
         this("", "");
     }
@@ -85,7 +92,15 @@ public class FeedFilter {
         return includeFilter;
     }
 
+    public void setIncludeFilter(String includeFilter) {
+        this.includeFilter = includeFilter;
+    }
+
     public String getExcludeFilter() { return excludeFilter; }
+
+    public void setExcludeFilter(String excludeFilter) {
+        this.excludeFilter = excludeFilter;
+    }
 
     /**
      * @return true if only include is set

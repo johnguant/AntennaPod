@@ -1,5 +1,9 @@
 package de.danoeh.antennapod.core.feed;
 
+import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.PrimaryKey;
+
 /**
  * Represents every possible component of a feed
  *
@@ -7,6 +11,8 @@ package de.danoeh.antennapod.core.feed;
  */
 public abstract class FeedComponent {
 
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
     long id;
 
     FeedComponent() {

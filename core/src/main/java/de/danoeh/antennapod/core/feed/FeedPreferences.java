@@ -3,6 +3,12 @@ package de.danoeh.antennapod.core.feed;
 import android.content.Context;
 import android.database.Cursor;
 import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
+import androidx.room.Embedded;
+import androidx.room.Ignore;
+import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
+
 import android.text.TextUtils;
 
 import de.danoeh.antennapod.core.preferences.UserPreferences;
@@ -17,9 +23,16 @@ public class FeedPreferences {
     public static final float SPEED_USE_GLOBAL = -1;
 
     @NonNull
+    @Embedded
     private FeedFilter filter;
+
+//    @ColumnInfo(name = "id")
+    @Ignore
     private long feedID;
+
+    @ColumnInfo(name = "auto_download", defaultValue = "1")
     private boolean autoDownload;
+    @ColumnInfo(name = "keep_updated", defaultValue = "1")
     private boolean keepUpdated;
 
     public enum AutoDeleteAction {
@@ -27,23 +40,51 @@ public class FeedPreferences {
         YES,
         NO
     }
-    private AutoDeleteAction auto_delete_action;
-    private String username;
-    private String password;
-    private float feedPlaybackSpeed;
+    @ColumnInfo(name = "auto_delete_action", defaultValue = "0")
+    @TypeConverters({AutoDeleteActionConverter.class})
+    private AutoDeleteAction autoDeleteAction;
 
-    public FeedPreferences(long feedID, boolean autoDownload, AutoDeleteAction auto_delete_action, String username, String password) {
-        this(feedID, autoDownload, true, auto_delete_action, username, password, new FeedFilter(), SPEED_USE_GLOBAL);
+    static class AutoDeleteActionConverter {
+        @TypeConverter
+        public static int toInt(AutoDeleteAction autoDeleteAction) {
+            return autoDeleteAction.ordinal();
+        }
+
+        @TypeConverter
+        public static AutoDeleteAction toAutoDeleteAction(int ordinal) {
+            return AutoDeleteAction.values()[ordinal];
+        }
     }
 
-    private FeedPreferences(long feedID, boolean autoDownload, boolean keepUpdated, AutoDeleteAction auto_delete_action, String username, String password, @NonNull FeedFilter filter, float feedPlaybackSpeed) {
+    @ColumnInfo(name = "username")
+    private String username;
+    @ColumnInfo(name = "password")
+    private String password;
+    @ColumnInfo(name = "feed_playback_speed", defaultValue = "-1.0")
+    private float feedPlaybackSpeed;
+
+    public FeedPreferences(long feedID, boolean autoDownload, AutoDeleteAction autoDeleteAction, String username, String password) {
+        this(feedID, autoDownload, true, autoDeleteAction, username, password, new FeedFilter(), SPEED_USE_GLOBAL);
+    }
+
+    private FeedPreferences(long feedID, boolean autoDownload, boolean keepUpdated, AutoDeleteAction autoDeleteAction, String username, String password, @NonNull FeedFilter filter, float feedPlaybackSpeed) {
         this.feedID = feedID;
         this.autoDownload = autoDownload;
         this.keepUpdated = keepUpdated;
-        this.auto_delete_action = auto_delete_action;
+        this.autoDeleteAction = autoDeleteAction;
         this.username = username;
         this.password = password;
         this.filter = filter;
+        this.feedPlaybackSpeed = feedPlaybackSpeed;
+    }
+
+    public FeedPreferences(@NonNull FeedFilter filter, boolean autoDownload, boolean keepUpdated, AutoDeleteAction autoDeleteAction, String username, String password, float feedPlaybackSpeed) {
+        this.filter = filter;
+        this.autoDownload = autoDownload;
+        this.keepUpdated = keepUpdated;
+        this.autoDeleteAction = autoDeleteAction;
+        this.username = username;
+        this.password = password;
         this.feedPlaybackSpeed = feedPlaybackSpeed;
     }
 
@@ -141,15 +182,15 @@ public class FeedPreferences {
     }
 
     public AutoDeleteAction getAutoDeleteAction() {
-        return auto_delete_action;
+        return autoDeleteAction;
     }
 
     public void setAutoDeleteAction(AutoDeleteAction auto_delete_action) {
-        this.auto_delete_action = auto_delete_action;
+        this.autoDeleteAction = auto_delete_action;
     }
 
     public boolean getCurrentAutoDelete() {
-        switch (auto_delete_action) {
+        switch (autoDeleteAction) {
             case GLOBAL:
                 return UserPreferences.isAutoDelete();
 

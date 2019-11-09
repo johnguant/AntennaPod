@@ -2,15 +2,37 @@ package de.danoeh.antennapod.core.feed;
 
 import android.database.Cursor;
 
+import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
+
 import de.danoeh.antennapod.core.storage.PodDBAdapter;
 
+@Entity(tableName = "SimpleChapters", indices = {
+		@Index(name = "SimpleChapters_feeditem", value = "feeditem")
+})
 public abstract class Chapter extends FeedComponent {
 
 	/** Defines starting point in milliseconds. */
-    long start;
+	@ColumnInfo(name = "start")
+			@Nullable
+    Long start;
+    @ColumnInfo(name = "title")
 	String title;
+    @ColumnInfo(name = "link")
 	String link;
 
+	@ColumnInfo(name = "feeditem")
+	@Nullable
+	Integer feedItemId;
+
+	@ColumnInfo(name = "type")
+	@Nullable
+	Integer chapterType;
+
+	@Ignore
 	Chapter() {
 	}
 	

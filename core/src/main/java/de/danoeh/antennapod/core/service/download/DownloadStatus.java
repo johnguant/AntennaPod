@@ -1,7 +1,15 @@
 package de.danoeh.antennapod.core.service.download;
 
 import android.database.Cursor;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
 
 import java.util.Date;
 
@@ -10,6 +18,7 @@ import de.danoeh.antennapod.core.storage.PodDBAdapter;
 import de.danoeh.antennapod.core.util.DownloadError;
 
 /** Contains status attributes for one download */
+@Entity(tableName = "DownloadLog")
 public class DownloadStatus {
 	/**
 	 * Downloaders should use this constant for the size attribute if necessary
@@ -19,31 +28,60 @@ public class DownloadStatus {
 
 	// ----------------------------------- ATTRIBUTES STORED IN DB
 	/** Unique id for storing the object in database. */
-    private long id;
+	@PrimaryKey(autoGenerate = true)
+	@ColumnInfo(name = "id")
+	@Nullable
+    private Long id;
 	/**
 	 * A human-readable string which is shown to the user so that he can
 	 * identify the download. Should be the title of the item/feed/media or the
 	 * URL if the download has no other title.
 	 */
+	@ColumnInfo(name = "title")
     private final String title;
+
+	@ColumnInfo(name = "reason")
+	@TypeConverters({DownloadErrorConverter.class})
 	private DownloadError reason;
+
+	static class DownloadErrorConverter {
+		@TypeConverter
+		public static int toInt(DownloadError downloadError) {
+			return downloadError.getCode();
+		}
+
+		@TypeConverter
+		public static DownloadError toDownloadError(int reason) {
+			return DownloadError.fromCode(reason);
+		}
+	}
 	/**
 	 * A message which can be presented to the user to give more information.
 	 * Should be null if Download was successful.
 	 */
+	@ColumnInfo(name = "reason_detailed")
     private String reasonDetailed;
-	private boolean successful;
+	@ColumnInfo(name = "successful")
+	@Nullable
+	private Boolean successful;
+	@ColumnInfo(name = "completion_date")
 	private Date completionDate;
-	private final long feedfileId;
+	@ColumnInfo(name = "feedfile")
+	@Nullable
+	private final Long feedfileId;
 	/**
 	 * Is used to determine the type of the feedfile even if the feedfile does
 	 * not exist anymore. The value should be FEEDFILETYPE_FEED,
 	 * FEEDFILETYPE_FEEDIMAGE or FEEDFILETYPE_FEEDMEDIA
 	 */
-    private final int feedfileType;
+	@ColumnInfo(name = "feedfile_type")
+	@Nullable
+    private final Integer feedfileType;
 
 	// ------------------------------------ NOT STORED IN DB
+	@Ignore
     private boolean done;
+	@Ignore
 	private boolean cancelled;
 
 	/** Constructor for restoring Download status entries from DB. */
@@ -196,4 +234,8 @@ public class DownloadStatus {
     public void setId(long id) {
         this.id = id;
     }
+
+	public void setCompletionDate(Date completionDate) {
+		this.completionDate = completionDate;
+	}
 }

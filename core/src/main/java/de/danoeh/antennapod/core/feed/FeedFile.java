@@ -2,6 +2,8 @@ package de.danoeh.antennapod.core.feed;
 
 import android.text.TextUtils;
 
+import androidx.room.ColumnInfo;
+
 import java.io.File;
 
 /**
@@ -9,8 +11,11 @@ import java.io.File;
  */
 public abstract class FeedFile extends FeedComponent {
 
+    @ColumnInfo(name = "file_url")
     String file_url;
+    @ColumnInfo(name = "download_url")
     protected String download_url;
+    @ColumnInfo(name = "downloaded")
     boolean downloaded;
 
     /**

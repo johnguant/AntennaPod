@@ -8,13 +8,8 @@ import androidx.room.ColumnInfo;
 import androidx.room.Embedded;
 import androidx.room.Entity;
 import androidx.room.Ignore;
-import androidx.room.Relation;
 import androidx.room.TypeConverter;
 import androidx.room.TypeConverters;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 import de.danoeh.antennapod.core.asynctask.ImageResource;
 import de.danoeh.antennapod.core.storage.DBWriter;
@@ -26,7 +21,8 @@ import de.danoeh.antennapod.core.util.SortOrder;
  *
  * @author daniel
  */
-public class Feed extends FeedFile implements ImageResource {
+@Entity(tableName = "Feeds")
+public class FeedEntity extends FeedFile implements ImageResource {
 
     public static final int FEEDFILETYPE_FEED = 0;
     public static final String TYPE_RSS2 = "rss";
@@ -60,9 +56,6 @@ public class Feed extends FeedFile implements ImageResource {
     private String author;
     @ColumnInfo(name = "image_url")
     private String imageUrl;
-
-    @Relation(parentColumn = "id", entityColumn = "feed")
-    private List<FeedItem> items;
 
     /**
      * String that identifies the last update (adopted from Last-Modified or ETag header)
@@ -109,7 +102,7 @@ public class Feed extends FeedFile implements ImageResource {
     private String nextPageLink;
 
     @ColumnInfo(name = "last_update_failed", defaultValue = "0")
-    private boolean lastUpdateFailed;
+    private Boolean lastUpdateFailed;
 
     /**
      * Contains property strings. If such a property applies to a feed item, it is not shown in the feed list
@@ -158,10 +151,10 @@ public class Feed extends FeedFile implements ImageResource {
     /**
      * This constructor is used for restoring a feed from the database.
      */
-    public Feed(long id, String lastUpdate, String title, String customTitle, String link, String description, String paymentLink,
-                String author, String language, String type, String feedIdentifier, String imageUrl, String fileUrl,
-                String downloadUrl, boolean downloaded, boolean paged, String nextPageLink,
-                String filter, @Nullable SortOrder sortOrder, boolean lastUpdateFailed) {
+    public FeedEntity(long id, String lastUpdate, String title, String customTitle, String link, String description, String paymentLink,
+                      String author, String language, String type, String feedIdentifier, String imageUrl, String fileUrl,
+                      String downloadUrl, boolean downloaded, boolean paged, String nextPageLink,
+                      String filter, @Nullable SortOrder sortOrder, boolean lastUpdateFailed) {
         super(fileUrl, downloadUrl, downloaded);
         this.id = id;
         this.feedTitle = title;
@@ -177,7 +170,6 @@ public class Feed extends FeedFile implements ImageResource {
         this.imageUrl = imageUrl;
         this.paged = paged;
         this.nextPageLink = nextPageLink;
-        this.items = new ArrayList<>();
         if(filter != null) {
             this.itemFilter = new FeedItemFilter(filter);
         } else {
@@ -190,9 +182,9 @@ public class Feed extends FeedFile implements ImageResource {
     /**
      * This constructor is used for test purposes
      */
-    public Feed(long id, String lastUpdate, String title, String link, String description, String paymentLink,
-                String author, String language, String type, String feedIdentifier, String imageUrl, String fileUrl,
-                String downloadUrl, boolean downloaded) {
+    public FeedEntity(long id, String lastUpdate, String title, String link, String description, String paymentLink,
+                      String author, String language, String type, String feedIdentifier, String imageUrl, String fileUrl,
+                      String downloadUrl, boolean downloaded) {
         this(id, lastUpdate, title, null, link, description, paymentLink, author, language, type, feedIdentifier, imageUrl,
                 fileUrl, downloadUrl, downloaded, false, null, null, null, false);
     }
@@ -200,7 +192,7 @@ public class Feed extends FeedFile implements ImageResource {
     /**
      * This constructor can be used when parsing feed data. Only the 'lastUpdate' and 'items' field are initialized.
      */
-    public Feed() {
+    public FeedEntity() {
         super();
     }
 
@@ -208,7 +200,7 @@ public class Feed extends FeedFile implements ImageResource {
      * This constructor is used for requesting a feed download (it must not be used for anything else!). It should NOT be
      * used if the title of the feed is already known.
      */
-    public Feed(String url, String lastUpdate) {
+    public FeedEntity(String url, String lastUpdate) {
         super(null, url, false);
         this.lastUpdate = lastUpdate;
     }
@@ -217,7 +209,7 @@ public class Feed extends FeedFile implements ImageResource {
      * This constructor is used for requesting a feed download (it must not be used for anything else!). It should be
      * used if the title of the feed is already known.
      */
-    public Feed(String url, String lastUpdate, String title) {
+    public FeedEntity(String url, String lastUpdate, String title) {
         this(url, lastUpdate);
         this.feedTitle = title;
     }
@@ -226,12 +218,12 @@ public class Feed extends FeedFile implements ImageResource {
      * This constructor is used for requesting a feed download (it must not be used for anything else!). It should be
      * used if the title of the feed is already known.
      */
-    public Feed(String url, String lastUpdate, String title, String username, String password) {
+    public FeedEntity(String url, String lastUpdate, String title, String username, String password) {
         this(url, lastUpdate, title);
         preferences = new FeedPreferences(0, true, FeedPreferences.AutoDeleteAction.GLOBAL, username, password);
     }
 
-    public static Feed fromCursor(Cursor cursor) {
+    public static FeedEntity fromCursor(Cursor cursor) {
         int indexId = cursor.getColumnIndex(PodDBAdapter.KEY_ID);
         int indexLastUpdate = cursor.getColumnIndex(PodDBAdapter.KEY_LASTUPDATE);
         int indexTitle = cursor.getColumnIndex(PodDBAdapter.KEY_TITLE);
@@ -253,7 +245,7 @@ public class Feed extends FeedFile implements ImageResource {
         int indexLastUpdateFailed = cursor.getColumnIndex(PodDBAdapter.KEY_LAST_UPDATE_FAILED);
         int indexImageUrl = cursor.getColumnIndex(PodDBAdapter.KEY_IMAGE_URL);
 
-        Feed feed = new Feed(
+        FeedEntity feed = new FeedEntity(
                 cursor.getLong(indexId),
                 cursor.getString(indexLastUpdate),
                 cursor.getString(indexTitle),
@@ -279,22 +271,6 @@ public class Feed extends FeedFile implements ImageResource {
         FeedPreferences preferences = FeedPreferences.fromCursor(cursor);
         feed.setPreferences(preferences);
         return feed;
-    }
-
-    /**
-     * Returns the number of FeedItems.
-     *
-     */
-    public int getNumOfItems() {
-        return items.size();
-    }
-
-    /**
-     * Returns the item at the specified index.
-     *
-     */
-    public FeedItem getItemAtIndex(int position) {
-        return items.get(position);
     }
 
     /**
@@ -324,7 +300,7 @@ public class Feed extends FeedFile implements ImageResource {
         }
     }
 
-    public void updateFromOther(Feed other) {
+    public void updateFromOther(FeedEntity other) {
         // don't update feed's download_url, we do that manually if redirected
         // see AntennapodHttpClient
         if (other.imageUrl != null) {
@@ -359,7 +335,7 @@ public class Feed extends FeedFile implements ImageResource {
         }
     }
 
-    public boolean compareWithOther(Feed other) {
+    public boolean compareWithOther(FeedEntity other) {
         if (super.compareWithOther(other)) {
             return true;
         }
@@ -408,19 +384,6 @@ public class Feed extends FeedFile implements ImageResource {
             return true;
         }
         return false;
-    }
-
-    public FeedItem getMostRecentItem() {
-        // we could sort, but we don't need to, a simple search is fine...
-        Date mostRecentDate = new Date(0);
-        FeedItem mostRecentItem = null;
-        for (FeedItem item : items) {
-            if (item.getPubDate().after(mostRecentDate)) {
-                mostRecentDate = item.getPubDate();
-                mostRecentItem = item;
-            }
-        }
-        return mostRecentItem;
     }
 
     @Override
@@ -479,14 +442,6 @@ public class Feed extends FeedFile implements ImageResource {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
-    }
-
-    public List<FeedItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<FeedItem> list) {
-        this.items = list;
     }
 
     public String getLastUpdate() {

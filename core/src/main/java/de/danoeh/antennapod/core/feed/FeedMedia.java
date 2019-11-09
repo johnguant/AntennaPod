@@ -8,6 +8,11 @@ import android.media.MediaMetadataRetriever;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.Index;
+
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 
@@ -26,6 +31,9 @@ import de.danoeh.antennapod.core.storage.PodDBAdapter;
 import de.danoeh.antennapod.core.util.ChapterUtils;
 import de.danoeh.antennapod.core.util.playback.Playable;
 
+@Entity(tableName = "FeedMedia", indices = {
+        @Index(name = "FeedMedia_feeditem", value = "feeditem")
+})
 public class FeedMedia extends FeedFile implements Playable {
     private static final String TAG = "FeedMedia";
 
@@ -37,29 +45,68 @@ public class FeedMedia extends FeedFile implements Playable {
 
     /**
      * Indicates we've checked on the size of the item via the network
-     * and got an invalid response. Using Integer.MIN_VALUE because
+     * and got an invalid response. Using Long.MIN_VALUE because
      * 1) we'll still check on it in case it gets downloaded (it's <= 0)
      * 2) By default all FeedMedia have a size of 0 if we don't know it,
      *    so this won't conflict with existing practice.
      */
-    private static final int CHECKED_ON_SIZE_BUT_UNKNOWN = Integer.MIN_VALUE;
+    private static final long CHECKED_ON_SIZE_BUT_UNKNOWN = Long.MIN_VALUE;
 
+    @ColumnInfo(name = "duration")
     private int duration;
+    @ColumnInfo(name = "position")
     private int position; // Current position in file
+    @ColumnInfo(name = "last_played_time")
     private long lastPlayedTime; // Last time this media was played (in ms)
-    private int played_duration; // How many ms of this file have been played
+
+    @ColumnInfo(name = "played_duration", defaultValue = "0")
+    private int playedDuration; // How many ms of this file have been played
+    @ColumnInfo(name = "filesize")
     private long size; // File size in Byte
+    @ColumnInfo(name = "mime_type")
     private String mime_type;
+
+    @ColumnInfo(name = "feeditem")
+    private int feedItemId;
+
+    public int getFeedItemId() {
+        return feedItemId;
+    }
+
+    public void setFeedItemId(int feedItemId) {
+        this.feedItemId = feedItemId;
+    }
+
+    @Ignore
     @Nullable private volatile FeedItem item;
+    @ColumnInfo(name = "playback_completion_date")
     private Date playbackCompletionDate;
+
+    @Ignore
     private int startPosition = -1;
+
+    @Ignore
     private int playedDurationWhenStarted;
 
     // if null: unknown, will be checked
+    @ColumnInfo(name = "has_embedded_picture")
     private Boolean hasEmbeddedPicture;
 
     /* Used for loading item when restoring from parcel. */
+    @Ignore
     private long itemID;
+
+    public long getItemID() {
+        return itemID;
+    }
+
+    public void setItemID(long itemID) {
+        this.itemID = itemID;
+    }
+
+    public FeedMedia(){
+        super();
+    }
 
     public FeedMedia(FeedItem i, String download_url, long size,
                      String mime_type) {
@@ -71,15 +118,15 @@ public class FeedMedia extends FeedFile implements Playable {
 
     public FeedMedia(long id, FeedItem item, int duration, int position,
                      long size, String mime_type, String file_url, String download_url,
-                     boolean downloaded, Date playbackCompletionDate, int played_duration,
+                     boolean downloaded, Date playbackCompletionDate, int playedDuration,
                      long lastPlayedTime) {
         super(file_url, download_url, downloaded);
         this.id = id;
         this.item = item;
         this.duration = duration;
         this.position = position;
-        this.played_duration = played_duration;
-        this.playedDurationWhenStarted = played_duration;
+        this.playedDuration = playedDuration;
+        this.playedDurationWhenStarted = playedDuration;
         this.size = size;
         this.mime_type = mime_type;
         this.playbackCompletionDate = playbackCompletionDate == null
@@ -89,10 +136,10 @@ public class FeedMedia extends FeedFile implements Playable {
 
     private FeedMedia(long id, FeedItem item, int duration, int position,
                       long size, String mime_type, String file_url, String download_url,
-                      boolean downloaded, Date playbackCompletionDate, int played_duration,
+                      boolean downloaded, Date playbackCompletionDate, int playedDuration,
                       Boolean hasEmbeddedPicture, long lastPlayedTime) {
         this(id, item, duration, position, size, mime_type, file_url, download_url, downloaded,
-                playbackCompletionDate, played_duration, lastPlayedTime);
+                playbackCompletionDate, playedDuration, lastPlayedTime);
         this.hasEmbeddedPicture = hasEmbeddedPicture;
     }
 
@@ -255,11 +302,11 @@ public class FeedMedia extends FeedFile implements Playable {
     }
 
     public int getPlayedDuration() {
-        return played_duration;
+        return playedDuration;
     }
 
     public void setPlayedDuration(int played_duration) {
-        this.played_duration = played_duration;
+        this.playedDuration = played_duration;
     }
 
     public int getPosition() {
@@ -362,7 +409,7 @@ public class FeedMedia extends FeedFile implements Playable {
         dest.writeString(download_url);
         dest.writeByte((byte) ((downloaded) ? 1 : 0));
         dest.writeLong((playbackCompletionDate != null) ? playbackCompletionDate.getTime() : 0);
-        dest.writeInt(played_duration);
+        dest.writeInt(playedDuration);
         dest.writeLong(lastPlayedTime);
     }
 
@@ -491,14 +538,14 @@ public class FeedMedia extends FeedFile implements Playable {
     @Override
     public void onPlaybackStart() {
         startPosition = (position > 0) ? position : 0;
-        playedDurationWhenStarted = played_duration;
+        playedDurationWhenStarted = playedDuration;
     }
 
     @Override
     public void onPlaybackPause(Context context) {
         if (position > startPosition) {
-            played_duration = playedDurationWhenStarted + position - startPosition;
-            playedDurationWhenStarted = played_duration;
+            playedDuration = playedDurationWhenStarted + position - startPosition;
+            playedDurationWhenStarted = playedDuration;
         }
         postPlaybackTasks(context, false);
         startPosition = position;

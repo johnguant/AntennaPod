@@ -55,8 +55,8 @@ class DBUpgrader {
                     + " ADD COLUMN " + PodDBAdapter.KEY_FEEDITEM
                     + " INTEGER");
             Cursor feeditemCursor = db.query(PodDBAdapter.TABLE_NAME_FEED_ITEMS,
-                    new String[]{PodDBAdapter.KEY_ID, PodDBAdapter.KEY_MEDIA}, "? > 0",
-                    new String[]{PodDBAdapter.KEY_MEDIA}, null, null, null);
+                    new String[]{PodDBAdapter.KEY_ID, "media"}, "? > 0",
+                    new String[]{"media"}, null, null, null);
             if (feeditemCursor.moveToFirst()) {
                 db.beginTransaction();
                 ContentValues contentValues = new ContentValues();

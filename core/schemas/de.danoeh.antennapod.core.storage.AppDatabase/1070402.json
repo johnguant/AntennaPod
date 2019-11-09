@@ -1,0 +1,622 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1070402,
+    "identityHash": "585a11aee43833c3e331102ad151f0f0",
+    "entities": [
+      {
+        "tableName": "Feeds",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `file_url` TEXT, `download_url` TEXT, `downloaded` INTEGER NOT NULL, `title` TEXT, `custom_title` TEXT, `feed_identifier` TEXT, `link` TEXT, `description` TEXT, `language` TEXT, `author` TEXT, `image_url` TEXT, `last_update` TEXT, `payment_link` TEXT, `type` TEXT, `is_paged` INTEGER NOT NULL DEFAULT 0, `next_page_link` TEXT, `last_update_failed` INTEGER DEFAULT 0, `hide` TEXT, `sort_order` TEXT, `auto_download` INTEGER DEFAULT 1, `keep_updated` INTEGER DEFAULT 1, `auto_delete_action` INTEGER DEFAULT 0, `username` TEXT, `password` TEXT, `feed_playback_speed` REAL DEFAULT -1.0, `include_filter` TEXT DEFAULT '', `exclude_filter` TEXT DEFAULT '')",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "file_url",
+            "columnName": "file_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "download_url",
+            "columnName": "download_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "downloaded",
+            "columnName": "downloaded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedTitle",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "customTitle",
+            "columnName": "custom_title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedIdentifier",
+            "columnName": "feed_identifier",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "author",
+            "columnName": "author",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "image_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastUpdate",
+            "columnName": "last_update",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "paymentLink",
+            "columnName": "payment_link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "paged",
+            "columnName": "is_paged",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "nextPageLink",
+            "columnName": "next_page_link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastUpdateFailed",
+            "columnName": "last_update_failed",
+            "affinity": "INTEGER",
+            "notNull": false,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "itemFilter",
+            "columnName": "hide",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "preferences.autoDownload",
+            "columnName": "auto_download",
+            "affinity": "INTEGER",
+            "notNull": false,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "preferences.keepUpdated",
+            "columnName": "keep_updated",
+            "affinity": "INTEGER",
+            "notNull": false,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "preferences.autoDeleteAction",
+            "columnName": "auto_delete_action",
+            "affinity": "INTEGER",
+            "notNull": false,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "preferences.username",
+            "columnName": "username",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "preferences.password",
+            "columnName": "password",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "preferences.feedPlaybackSpeed",
+            "columnName": "feed_playback_speed",
+            "affinity": "REAL",
+            "notNull": false,
+            "defaultValue": "-1.0"
+          },
+          {
+            "fieldPath": "preferences.filter.includeFilter",
+            "columnName": "include_filter",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "preferences.filter.excludeFilter",
+            "columnName": "exclude_filter",
+            "affinity": "TEXT",
+            "notNull": false,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "FeedItems",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `item_identifier` TEXT, `title` TEXT, `description` TEXT, `content_encoded` TEXT, `link` TEXT, `pubDate` INTEGER, `media` INTEGER NOT NULL, `feed` INTEGER NOT NULL, `read` INTEGER NOT NULL, `payment_link` TEXT, `has_simple_chapters` INTEGER NOT NULL, `image_url` TEXT, `auto_download` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemIdentifier",
+            "columnName": "item_identifier",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "contentEncoded",
+            "columnName": "content_encoded",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "pubDate",
+            "columnName": "pubDate",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deprecatedMedia",
+            "columnName": "media",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedId",
+            "columnName": "feed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playState",
+            "columnName": "read",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentLink",
+            "columnName": "payment_link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasChapters",
+            "columnName": "has_simple_chapters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "image_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "autoDownloadLong",
+            "columnName": "auto_download",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [
+          {
+            "name": "FeedItems_feed",
+            "unique": false,
+            "columnNames": [
+              "feed"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `FeedItems_feed` ON `${TABLE_NAME}` (`feed`)"
+          },
+          {
+            "name": "FeedItems_pubDate",
+            "unique": false,
+            "columnNames": [
+              "pubDate"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `FeedItems_pubDate` ON `${TABLE_NAME}` (`pubDate`)"
+          },
+          {
+            "name": "FeedItems_read",
+            "unique": false,
+            "columnNames": [
+              "read"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `FeedItems_read` ON `${TABLE_NAME}` (`read`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "FeedMedia",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `file_url` TEXT, `download_url` TEXT, `downloaded` INTEGER NOT NULL, `duration` INTEGER NOT NULL, `position` INTEGER NOT NULL, `last_played_time` INTEGER NOT NULL, `played_duration` INTEGER NOT NULL, `filesize` INTEGER NOT NULL, `mime_type` TEXT, `feeditem` INTEGER NOT NULL, `playback_completion_date` INTEGER, `has_embedded_picture` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "file_url",
+            "columnName": "file_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "download_url",
+            "columnName": "download_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "downloaded",
+            "columnName": "downloaded",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duration",
+            "columnName": "duration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPlayedTime",
+            "columnName": "last_played_time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playedDuration",
+            "columnName": "played_duration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "filesize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mime_type",
+            "columnName": "mime_type",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedItemId",
+            "columnName": "feeditem",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playbackCompletionDate",
+            "columnName": "playback_completion_date",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "hasEmbeddedPicture",
+            "columnName": "has_embedded_picture",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [
+          {
+            "name": "FeedMedia_feeditem",
+            "unique": false,
+            "columnNames": [
+              "feeditem"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `FeedMedia_feeditem` ON `${TABLE_NAME}` (`feeditem`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "DownloadLog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `title` TEXT, `reason` INTEGER, `reason_detailed` TEXT, `successful` INTEGER, `completion_date` INTEGER, `feedfile` INTEGER, `feedfile_type` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "reasonDetailed",
+            "columnName": "reason_detailed",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "successful",
+            "columnName": "successful",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "completionDate",
+            "columnName": "completion_date",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedfileId",
+            "columnName": "feedfile",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedfileType",
+            "columnName": "feedfile_type",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Queue",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `feed` INTEGER NOT NULL, `feeditem` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feed",
+            "columnName": "feed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedItem",
+            "columnName": "feeditem",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "Queue_feeditem",
+            "unique": false,
+            "columnNames": [
+              "feeditem"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `Queue_feeditem` ON `${TABLE_NAME}` (`feeditem`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "SimpleChapters",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `start` INTEGER, `title` TEXT, `link` TEXT, `feeditem` INTEGER, `type` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "start",
+            "columnName": "start",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "link",
+            "columnName": "link",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "feedItemId",
+            "columnName": "feeditem",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "chapterType",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [
+          {
+            "name": "SimpleChapters_feeditem",
+            "unique": false,
+            "columnNames": [
+              "feeditem"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `SimpleChapters_feeditem` ON `${TABLE_NAME}` (`feeditem`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Favorites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `feeditem` INTEGER NOT NULL, `feed` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedItem",
+            "columnName": "feeditem",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feed",
+            "columnName": "feed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '585a11aee43833c3e331102ad151f0f0')"
+    ]
+  }
+}

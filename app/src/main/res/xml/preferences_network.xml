@@ -24,9 +24,8 @@
                 android:summary="@string/pref_mobileUpdate_sum"
                 android:title="@string/pref_mobileUpdate_title"/>
         <de.danoeh.antennapod.preferences.NumberPickerPreference
-                android:defaultValue="4"
+                android:defaultValue="14"
                 numberpicker:minValue="1"
-                numberpicker:maxValue="50"
                 android:key="prefParallelDownloads"
                 android:title="@string/pref_parallel_downloads_title"/>
         <SwitchPreference

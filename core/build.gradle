@@ -88,6 +88,9 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.1.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
+    implementation "androidx.room:room-rxjava2:2.2.1"
+    implementation "androidx.room:room-ktx:2.2.1"
+
     // Add casting features
     // free build hack: skip some dependencies
     if (!doFreeBuild()) {

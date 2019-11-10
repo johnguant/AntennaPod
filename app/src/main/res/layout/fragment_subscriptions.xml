@@ -4,17 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-  <GridView
+  <androidx.recyclerview.widget.RecyclerView
       android:id="@+id/subscriptions_grid"
       android:layout_width="match_parent"
-      android:numColumns="3"
       android:horizontalSpacing="2dp"
       android:verticalSpacing="2dp"
       android:layout_height="match_parent"
       android:layout_gravity="center_horizontal"
       android:paddingBottom="88dp"
       android:clipToPadding="false">
-  </GridView>
+  </androidx.recyclerview.widget.RecyclerView>
     
     <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/subscriptions_add"

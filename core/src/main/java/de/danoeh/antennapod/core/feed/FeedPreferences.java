@@ -44,7 +44,7 @@ public class FeedPreferences {
     @TypeConverters({AutoDeleteActionConverter.class})
     private AutoDeleteAction autoDeleteAction;
 
-    static class AutoDeleteActionConverter {
+    public static class AutoDeleteActionConverter {
         @TypeConverter
         public static int toInt(AutoDeleteAction autoDeleteAction) {
             return autoDeleteAction.ordinal();

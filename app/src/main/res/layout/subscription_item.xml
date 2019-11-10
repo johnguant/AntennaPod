@@ -1,37 +1,47 @@
 <?xml version='1.0' encoding='utf-8'?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="horizontal">
 
     <de.danoeh.antennapod.view.SquareImageView
         android:id="@+id/imgvCover"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:scaleType="centerCrop"
-        tools:src="@mipmap/ic_launcher_round">
+        app:layout_constraintDimensionRatio="H,1:1"
+        tools:src="@mipmap/ic_launcher_round"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
     </de.danoeh.antennapod.view.SquareImageView>
 
     <com.joanzapata.iconify.widget.IconTextView
         android:id="@+id/txtvTitle"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="H,1:1"
         android:background="@color/light_gray"
         android:ellipsize="end"
         android:gravity="center"
-        tools:text="@string/app_name" />
+        tools:text="@string/app_name"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
 
     <jp.shts.android.library.TriangleLabelView
         android:id="@+id/triangleCountView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="right|top"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         app:backgroundColor="@color/antennapod_blue"
         app:corner="rightTop"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:primaryText="Test"
         app:primaryTextColor="@color/white"
-        app:primaryTextSize="12sp">
-    </jp.shts.android.library.TriangleLabelView>
-</FrameLayout>
+        app:primaryTextSize="12sp" />
+</androidx.constraintlayout.widget.ConstraintLayout>

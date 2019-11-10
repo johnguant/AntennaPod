@@ -52,7 +52,7 @@ public class UserPreferences {
     // User Interface
     public static final String PREF_THEME = "prefTheme";
     public static final String PREF_HIDDEN_DRAWER_ITEMS = "prefHiddenDrawerItems";
-    private static final String PREF_DRAWER_FEED_ORDER = "prefDrawerFeedOrder";
+    public static final String PREF_DRAWER_FEED_ORDER = "prefDrawerFeedOrder";
     private static final String PREF_DRAWER_FEED_COUNTER = "prefDrawerFeedIndicator";
     public static final String PREF_EXPANDED_NOTIFICATION = "prefExpandNotify";
     public static final String PREF_USE_EPISODE_COVER = "prefEpisodeCover";
@@ -139,6 +139,7 @@ public class UserPreferences {
     public static final int FEED_ORDER_COUNTER = 0;
     public static final int FEED_ORDER_ALPHABETICAL = 1;
     public static final int FEED_ORDER_MOST_PLAYED = 3;
+    public static final int FEED_ORDER_DRAG_AND_DROP = 4;
     public static final int FEED_COUNTER_SHOW_NEW_UNPLAYED_SUM = 0;
     public static final int FEED_COUNTER_SHOW_NEW = 1;
     public static final int FEED_COUNTER_SHOW_UNPLAYED = 2;

@@ -1,5 +1,6 @@
 package de.danoeh.antennapod.adapter;
 
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,11 +24,11 @@ public class CoverLoader {
     private String fallbackUri;
     private TextView txtvPlaceholder;
     private ImageView imgvCover;
-    private MainActivity activity;
+    private MainActivity mainActivity;
     private int errorResource = -1;
 
-    public CoverLoader(MainActivity activity) {
-        this.activity = activity;
+    public CoverLoader(MainActivity mainActivity) {
+        this.mainActivity = mainActivity;
     }
 
     public CoverLoader withUri(String uri) {
@@ -65,12 +66,12 @@ public class CoverLoader {
             options = options.error(errorResource);
         }
 
-        RequestBuilder<Drawable> builder = Glide.with(activity)
+        RequestBuilder<Drawable> builder = Glide.with(mainActivity)
                 .load(uri)
                 .apply(options);
 
         if (fallbackUri != null && txtvPlaceholder != null && imgvCover != null) {
-            builder = builder.error(Glide.with(activity)
+            builder = builder.error(Glide.with(mainActivity)
                     .load(fallbackUri)
                     .apply(options));
         }

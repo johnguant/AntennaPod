@@ -39,6 +39,17 @@ public class Feed extends FeedFile implements ImageResource {
     @ColumnInfo(name = "custom_title")
     private String customTitle;
 
+    @ColumnInfo(name = "user_position")
+    private int userPosition;
+
+    public int getUserPosition() {
+        return userPosition;
+    }
+
+    public void setUserPosition(int userPosition) {
+        this.userPosition = userPosition;
+    }
+
     /**
      * Contains 'id'-element in Atom feed.
      */
@@ -61,8 +72,19 @@ public class Feed extends FeedFile implements ImageResource {
     @ColumnInfo(name = "image_url")
     private String imageUrl;
 
-    @Relation(parentColumn = "id", entityColumn = "feed")
+    @Ignore
     private List<FeedItem> items;
+
+    @Relation(parentColumn = "id", entityColumn = "feed")
+    private List<FeedItemEntity> feedItems;
+
+    public List<FeedItemEntity> getFeedItems() {
+        return feedItems;
+    }
+
+    public void setFeedItems(List<FeedItemEntity> feedItems) {
+        this.feedItems = feedItems;
+    }
 
     /**
      * String that identifies the last update (adopted from Last-Modified or ETag header)
@@ -118,7 +140,7 @@ public class Feed extends FeedFile implements ImageResource {
     @TypeConverters({FeedItemFilterConverter.class})
     private FeedItemFilter itemFilter;
 
-    static class FeedItemFilterConverter {
+    public static class FeedItemFilterConverter {
         @TypeConverter
         public static String toString(FeedItemFilter itemFilter) {
             if (itemFilter != null && itemFilter.getValues().length > 0) {
@@ -143,7 +165,7 @@ public class Feed extends FeedFile implements ImageResource {
     @TypeConverters({SortOrderConverter.class})
     private SortOrder sortOrder;
 
-    static class SortOrderConverter {
+    public static class SortOrderConverter {
         @TypeConverter
         public static String toString(SortOrder sortOrder) {
             return SortOrder.toCodeString(sortOrder);
@@ -415,6 +437,20 @@ public class Feed extends FeedFile implements ImageResource {
         Date mostRecentDate = new Date(0);
         FeedItem mostRecentItem = null;
         for (FeedItem item : items) {
+            if (item.getPubDate().after(mostRecentDate)) {
+                mostRecentDate = item.getPubDate();
+                mostRecentItem = item;
+            }
+        }
+        return mostRecentItem;
+    }
+
+
+    public FeedItemEntity getMostRecentFeedItem() {
+        // we could sort, but we don't need to, a simple search is fine...
+        Date mostRecentDate = new Date(0);
+        FeedItemEntity mostRecentItem = null;
+        for (FeedItemEntity item : feedItems) {
             if (item.getPubDate().after(mostRecentDate)) {
                 mostRecentDate = item.getPubDate();
                 mostRecentItem = item;

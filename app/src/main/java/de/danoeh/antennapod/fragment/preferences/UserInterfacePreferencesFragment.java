@@ -13,8 +13,12 @@ import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.activity.PreferenceActivity;
 import de.danoeh.antennapod.core.preferences.UserPreferences;
+import de.danoeh.antennapod.core.storage.FeedRepository;
+import de.danoeh.antennapod.core.util.LongIntMap;
+
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserInterfacePreferencesFragment extends PreferenceFragmentCompat {
@@ -57,6 +61,18 @@ public class UserInterfacePreferencesFragment extends PreferenceFragmentCompat {
                             return true;
                         }
                 );
+        findPreference(UserPreferences.PREF_DRAWER_FEED_ORDER).setOnPreferenceChangeListener(
+                ((preference, newValue) -> {
+                    if(Integer.parseInt((String) newValue) == UserPreferences.FEED_ORDER_DRAG_AND_DROP) {
+                        int current = UserPreferences.getFeedOrder();
+                        FeedRepository feedRepository = new FeedRepository();
+                        feedRepository.getSubscriptions(current).first(new FeedRepository.SubscriptionData(new ArrayList<>(), new LongIntMap())).subscribe(subscriptionData -> {
+                            feedRepository.updateUserPositions(subscriptionData.getFeeds());
+                        });
+                    }
+                    return true;
+                })
+        );
         findPreference(UserPreferences.PREF_HIDDEN_DRAWER_ITEMS)
                 .setOnPreferenceClickListener(preference -> {
                     showDrawerPreferencesDialog();

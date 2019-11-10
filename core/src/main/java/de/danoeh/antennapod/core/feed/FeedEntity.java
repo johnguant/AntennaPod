@@ -35,6 +35,17 @@ public class FeedEntity extends FeedFile implements ImageResource {
     @ColumnInfo(name = "custom_title")
     private String customTitle;
 
+    @ColumnInfo(name = "user_position")
+    private int userPosition;
+
+    public int getUserPosition() {
+        return userPosition;
+    }
+
+    public void setUserPosition(int userPosition) {
+        this.userPosition = userPosition;
+    }
+
     /**
      * Contains 'id'-element in Atom feed.
      */
@@ -221,56 +232,6 @@ public class FeedEntity extends FeedFile implements ImageResource {
     public FeedEntity(String url, String lastUpdate, String title, String username, String password) {
         this(url, lastUpdate, title);
         preferences = new FeedPreferences(0, true, FeedPreferences.AutoDeleteAction.GLOBAL, username, password);
-    }
-
-    public static FeedEntity fromCursor(Cursor cursor) {
-        int indexId = cursor.getColumnIndex(PodDBAdapter.KEY_ID);
-        int indexLastUpdate = cursor.getColumnIndex(PodDBAdapter.KEY_LASTUPDATE);
-        int indexTitle = cursor.getColumnIndex(PodDBAdapter.KEY_TITLE);
-        int indexCustomTitle = cursor.getColumnIndex(PodDBAdapter.KEY_CUSTOM_TITLE);
-        int indexLink = cursor.getColumnIndex(PodDBAdapter.KEY_LINK);
-        int indexDescription = cursor.getColumnIndex(PodDBAdapter.KEY_DESCRIPTION);
-        int indexPaymentLink = cursor.getColumnIndex(PodDBAdapter.KEY_PAYMENT_LINK);
-        int indexAuthor = cursor.getColumnIndex(PodDBAdapter.KEY_AUTHOR);
-        int indexLanguage = cursor.getColumnIndex(PodDBAdapter.KEY_LANGUAGE);
-        int indexType = cursor.getColumnIndex(PodDBAdapter.KEY_TYPE);
-        int indexFeedIdentifier = cursor.getColumnIndex(PodDBAdapter.KEY_FEED_IDENTIFIER);
-        int indexFileUrl = cursor.getColumnIndex(PodDBAdapter.KEY_FILE_URL);
-        int indexDownloadUrl = cursor.getColumnIndex(PodDBAdapter.KEY_DOWNLOAD_URL);
-        int indexDownloaded = cursor.getColumnIndex(PodDBAdapter.KEY_DOWNLOADED);
-        int indexIsPaged = cursor.getColumnIndex(PodDBAdapter.KEY_IS_PAGED);
-        int indexNextPageLink = cursor.getColumnIndex(PodDBAdapter.KEY_NEXT_PAGE_LINK);
-        int indexHide = cursor.getColumnIndex(PodDBAdapter.KEY_HIDE);
-        int indexSortOrder = cursor.getColumnIndex(PodDBAdapter.KEY_SORT_ORDER);
-        int indexLastUpdateFailed = cursor.getColumnIndex(PodDBAdapter.KEY_LAST_UPDATE_FAILED);
-        int indexImageUrl = cursor.getColumnIndex(PodDBAdapter.KEY_IMAGE_URL);
-
-        FeedEntity feed = new FeedEntity(
-                cursor.getLong(indexId),
-                cursor.getString(indexLastUpdate),
-                cursor.getString(indexTitle),
-                cursor.getString(indexCustomTitle),
-                cursor.getString(indexLink),
-                cursor.getString(indexDescription),
-                cursor.getString(indexPaymentLink),
-                cursor.getString(indexAuthor),
-                cursor.getString(indexLanguage),
-                cursor.getString(indexType),
-                cursor.getString(indexFeedIdentifier),
-                cursor.getString(indexImageUrl),
-                cursor.getString(indexFileUrl),
-                cursor.getString(indexDownloadUrl),
-                cursor.getInt(indexDownloaded) > 0,
-                cursor.getInt(indexIsPaged) > 0,
-                cursor.getString(indexNextPageLink),
-                cursor.getString(indexHide),
-                SortOrder.fromCodeString(cursor.getString(indexSortOrder)),
-                cursor.getInt(indexLastUpdateFailed) > 0
-        );
-
-        FeedPreferences preferences = FeedPreferences.fromCursor(cursor);
-        feed.setPreferences(preferences);
-        return feed;
     }
 
     /**

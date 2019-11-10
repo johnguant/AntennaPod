@@ -296,8 +296,12 @@ public class PodDBAdapter {
     // Bill Pugh Singleton Implementation
     private static class SingletonHolder {
         private static final PodDBAdapter dbAdapter = new PodDBAdapter();
-        private static final AppDatabase db = Room.databaseBuilder(PodDBAdapter.context, AppDatabase.class, DATABASE_NAME).addMigrations(AppDatabase.Companion.getMIGRATION_1070401_1070402(), AppDatabase.Companion.getMIGRATION_1070402_1070403()).build();
+        private static final AppDatabase db = Room.databaseBuilder(PodDBAdapter.context, AppDatabase.class, DATABASE_NAME).addMigrations(AppDatabase.Companion.getMIGRATION_1070401_1070402(), AppDatabase.Companion.getMIGRATION_1070402_1070403(), AppDatabase.Companion.getMIGRATION_1070403_1070404()).build();
         private static final SupportSQLiteOpenHelper dbHelper = db.getOpenHelper();
+    }
+
+    public static AppDatabase getDBInstance() {
+        return SingletonHolder.db;
     }
 
     public static PodDBAdapter getInstance() {
